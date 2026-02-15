@@ -2,58 +2,125 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>SMAI Support System</title>
+    <title>SMAI Support & Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; }
-        .smai-card { background: rgba(30, 41, 59, 0.7); border: 1px solid #3b82f6; backdrop-filter: blur(10px); }
+        body { background: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .smai-gradient { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #3b82f6; }
+        .admin-only { display: none; }
     </style>
 </head>
-<body class="p-8">
+<body class="p-6">
 
-    <div class="max-w-md mx-auto smai-card p-6 rounded-2xl shadow-2xl">
-        <h1 class="text-2xl font-bold mb-6 text-blue-400 text-center">מרכז התמיכה SMAI</h1>
-        
-        <div id="ticket-form" class="space-y-4">
-            <div>
-                <label class="block text-sm mb-1">שם מלא</label>
-                <input type="text" id="cust-name" class="w-full p-2 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm mb-1">מה הבעיה?</label>
-                <textarea id="cust-msg" class="w-full p-2 rounded bg-slate-900 border border-slate-700 h-24 outline-none focus:border-blue-500"></textarea>
-            </div>
+    <div id="customer-view" class="max-w-2xl mx-auto space-y-6">
+        <div class="smai-gradient p-8 rounded-3xl shadow-2xl text-center">
+            <h1 class="text-3xl font-bold mb-2 text-blue-400">מרכז התמיכה SMAI</h1>
+            <p class="text-slate-400 text-sm mb-6">אנחנו כאן כדי לעזור לך בכל בעיה טכנית</p>
             
-            <p class="text-sm font-bold text-slate-400">איך תרצה שנעזור לך?</p>
-            <div class="grid grid-cols-1 gap-2">
-                <button onclick="contact('whatsapp')" class="bg-green-600 hover:bg-green-700 p-2 rounded font-bold transition">WhatsApp 💬</button>
-                <button onclick="contact('mail')" class="bg-red-600 hover:bg-red-700 p-2 rounded font-bold transition">Email ✉️</button>
-                <button id="live-chat-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold transition">צ'אט אנונימי אונליין ⚡</button>
+            <div class="space-y-4 text-right">
+                <input type="text" id="cust-name" placeholder="השם שלך" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 focus:border-blue-500 outline-none">
+                <textarea id="cust-msg" placeholder="תאר את הבעיה..." class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 h-32 focus:border-blue-500 outline-none"></textarea>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <button onclick="sendTicket('whatsapp')" class="bg-green-600 hover:bg-green-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2">וואטסאפ 💬</button>
+                    <button onclick="sendTicket('mail')" class="bg-red-600 hover:bg-red-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2">מייל ✉️</button>
+                    <button onclick="sendTicket('chat')" class="bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2">צ'אט SMAI ⚡</button>
+                </div>
             </div>
+        </div>
+        
+        <button id="login-admin" class="text-xs text-slate-600 hover:text-blue-400 transition">כניסת צוות SMAI</button>
+    </div>
+
+    <div id="admin-view" class="admin-only max-w-4xl mx-auto mt-10">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-yellow-400 underline italic">פאנל ניהול טיקטים</h2>
+            <button onclick="logout()" class="text-xs bg-slate-800 p-2 rounded">התנתק</button>
+        </div>
+        
+        <div id="tickets-container" class="space-y-4">
+            <p class="text-slate-500 italic">טוען פניות...</p>
         </div>
     </div>
 
-    <div id="admin-panel" class="mt-12 hidden">
-        <h2 class="text-xl font-bold mb-4 text-yellow-400">ניהול טיקטים - צוות SMAI</h2>
-        <div id="tickets-list" class="space-y-2">
-            </div>
-    </div>
+    
 
     <script type="module">
-        // כאן יבוא החיבור ל-Firebase שדיברנו עליו קודם
-        
-        window.contact = function(type) {
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // שליחת טיקט
+        window.sendTicket = async (type) => {
             const name = document.getElementById('cust-name').value;
             const msg = document.getElementById('cust-msg').value;
-            
-            if (type === 'whatsapp') {
-                window.open(`https://wa.me/972XXXXXXXXX?text=שלום, אני ${name}. הבעיה שלי היא: ${msg}`);
-            } else if (type === 'mail') {
-                window.location.href = `mailto:support@smai.com?subject=תמיכה מהאתר - ${name}&body=${msg}`;
+
+            if(!name || !msg) return alert("מלא את כל הפרטים!");
+
+            // שמירה ב-Database
+            await addDoc(collection(db, "tickets"), {
+                name, msg, type, status: "new", createdAt: serverTimestamp()
+            });
+
+            if(type === 'whatsapp') window.open(`https://wa.me/972XXXXXXXXX?text=שלום SMAI, אני ${name}: ${msg}`);
+            else if(type === 'mail') window.location.href = `mailto:support@smai.com?body=${msg}`;
+            else alert("הפנייה נשלחה לצ'אט! איש צוות יתחבר בקרוב.");
+        };
+
+        // התחברות צוות
+        document.getElementById('login-admin').onclick = () => signInWithPopup(auth, provider);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const staffDoc = await getDoc(doc(db, "staff", user.uid));
+                if (staffDoc.exists() && staffDoc.data().isAdmin) {
+                    showAdminPanel();
+                } else {
+                    alert("אין לך הרשאות צוות.");
+                    signOut(auth);
+                }
             }
-            
-            // כאן נוסיף קוד ששומר את הפנייה ב-Firestore כדי שתוכל לראות אותה בפאנל
+        });
+
+        function showAdminPanel() {
+            document.getElementById('customer-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+            loadTickets();
         }
+
+        function loadTickets() {
+            const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('tickets-container');
+                container.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    container.innerHTML += `
+                        <div class="p-4 bg-slate-800 rounded-lg border-r-4 border-blue-500 shadow-lg">
+                            <div class="flex justify-between">
+                                <span class="font-bold text-blue-300">${t.name}</span>
+                                <span class="text-[10px] text-slate-500">${t.type}</span>
+                            </div>
+                            <p class="text-sm mt-2">${t.msg}</p>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        window.logout = () => signOut(auth).then(() => location.reload());
     </script>
 </body>
 </html>
