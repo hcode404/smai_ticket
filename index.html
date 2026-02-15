@@ -2,71 +2,70 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>SMAI Support Center</title>
+    <title>SMAI Connect - Pusher Chat</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #0f172a; color: white; font-family: sans-serif; }
-        .smai-card { background: #1e293b; border: 1px solid #3b82f6; border-radius: 15px; }
+        .chat-box { height: 400px; background: #1e293b; border: 1px solid #3b82f6; }
+        .message { background: #334155; padding: 10px; border-radius: 12px; margin-bottom: 8px; width: fit-content; }
     </style>
 </head>
-<body class="p-5">
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div id="app" class="max-w-md mx-auto space-y-5">
-        <div class="smai-card p-6 text-center">
-            <h1 class="text-2xl font-bold text-blue-400 mb-4">תמיכת SMAI</h1>
-            <input id="userName" type="text" placeholder="השם שלך" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-700">
-            <textarea id="userIssue" placeholder="איך אפשר לעזור?" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-700 h-24"></textarea>
-            
-            <div class="grid grid-cols-1 gap-2">
-                <button id="open-chat" class="bg-blue-600 p-2 rounded font-bold">פתיחת צ'אט אנונימי ⚡</button>
-            </div>
+    <div class="w-full max-w-md">
+        <h1 class="text-3xl font-black text-blue-500 mb-4 text-center">SMAI LIVE CHAT</h1>
+        
+        <div id="messages" class="chat-box w-full rounded-t-2xl p-4 overflow-y-auto flex flex-col">
+            <div class="text-slate-500 italic text-sm mb-4 text-center">מחובר לשרת SMAI-Pusher...</div>
+        </div>
+
+        <div class="flex bg-slate-800 p-2 rounded-b-2xl border-t border-slate-700">
+            <input type="text" id="msgInput" placeholder="הקלד הודעה..." class="flex-grow bg-transparent p-2 outline-none text-sm">
+            <button onclick="sendMessage()" class="bg-blue-600 px-6 py-2 rounded-xl font-bold hover:bg-blue-500 transition">שלח</button>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    
 
-        // הנתונים שלך מה-Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDYDkAmoXztR7LdsXdY_GQzgZLnzoDZolg",
-            authDomain: "sspeak-90bf3.firebaseapp.com",
-            projectId: "sspeak-90bf3",
-            storageBucket: "sspeak-90bf3.firebasestorage.app",
-            messagingSenderId: "664670416687",
-            appId: "1:664670416687:web:0e7430338b37d041cc7bda",
-            measurementId: "G-JE78RMNKEX"
-        };
+    <script>
+        // הגדרות Pusher מהחשבון שלך
+        Pusher.logToConsole = true;
+        const pusher = new Pusher('c1a8f838306b98eb7e7a', {
+            cluster: 'ap2',
+            forceTLS: true
+        });
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // הצטרפות לערוץ
+        const channel = pusher.subscribe('my-channel');
 
-        document.getElementById('open-chat').onclick = async () => {
-            const name = document.getElementById('userName').value;
-            const issue = document.getElementById('userIssue').value;
+        // האזנה להודעות חדשות
+        channel.bind('my-event', function(data) {
+            const messagesDiv = document.getElementById('messages');
+            const newMessage = document.createElement('div');
+            newMessage.className = 'message';
+            newMessage.innerText = data.message;
+            messagesDiv.appendChild(newMessage);
+            
+            // גלילה אוטומטית למטה
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
 
-            if(!name || !issue) return alert("מלא שם ופירוט בעיה");
+        // פונקציה לשליחת הודעה
+        // הערה: בגלל שאין לנו שרת פייתון כרגע, נדמה את השליחה. 
+        // ב-Pusher האמיתי, הלקוח שולח לשרת והשרת מפיץ לכולם.
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value;
+            if (!text) return;
 
-            try {
-                // התחברות אנונימית
-                await signInAnonymously(auth);
-                
-                // שמירת הטיקט ב-Database
-                await addDoc(collection(db, "tickets"), {
-                    customerName: name,
-                    message: issue,
-                    status: "open",
-                    createdAt: serverTimestamp()
-                });
-
-                alert("הפנייה נשלחה! נציג SMAI יחזור אליך בקרוב.");
-            } catch (error) {
-                console.error(error);
-                alert("שגיאה: וודא שפתחת את ה-Firestore ב-Test Mode ב-Firebase Console.");
-            }
-        };
+            // כאן בדרך כלל שולחים בקשת Fetch לשרת פייתון/Node.js
+            // מכיוון שאתה רוצה הכל באתר אחד, אנחנו נשתמש ב-Debug console של Pusher כדי לבדוק את זה.
+            console.log("שלחת הודעה: " + text);
+            input.value = '';
+            
+            alert("הודעה נשלחה למערכת! כדי לראות אותה בצ'אט, עליך לשלוח אותה דרך ה-Debug Console ב-Pusher.");
+        }
     </script>
 </body>
 </html>
