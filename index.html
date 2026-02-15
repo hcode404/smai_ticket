@@ -2,25 +2,50 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMAI Support Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; }
+        .smai-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid #1e40af; }
+        .smai-input { background: #0f172a; border: 1px solid #1e293b; color: white; transition: 0.3s; }
+        .smai-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+    </style>
 </head>
-<body class="bg-slate-900 text-white p-10">
-    <div class="max-w-md mx-auto bg-slate-800 p-8 rounded-2xl border border-blue-500 shadow-2xl">
-        <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">SMAI SUPPORT</h1>
-        <p class="text-xs text-slate-400 mb-4 text-center">המערכת מחוברת ל-Firebase Database</p>
-        
-        <input id="userName" type="text" placeholder="השם שלך" class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500 text-white">
-        
-        <input id="userEmail" type="email" placeholder="האימייל שלך (חובה למענה)" class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500 text-white">
-        
-        <textarea id="userIssue" placeholder="תאר את הבעיה בפירוט..." class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 h-32 outline-none focus:border-blue-500 text-white"></textarea>
-        
-        <button id="sendBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition">שלח פנייה לצוות SMAI ⚡</button>
-        <div id="status" class="mt-4 text-center text-sm font-bold"></div>
+<body class="text-white min-h-screen flex items-center justify-center p-6">
+
+    <div class="smai-card max-w-md w-full p-8 rounded-3xl shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black text-blue-500 tracking-tighter">SMAI CONNECT</h1>
+            <p class="text-slate-400 text-sm mt-2">מרכז התמיכה והגנת הרשת</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1 mr-1">שם מלא</label>
+                <input id="userName" type="text" placeholder="הכנס שם..." class="smai-input w-full p-3 rounded-xl text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1 mr-1">אימייל למענה</label>
+                <input id="userEmail" type="email" placeholder="example@mail.com" class="smai-input w-full p-3 rounded-xl text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1 mr-1">תיאור הפנייה</label>
+                <textarea id="userIssue" placeholder="איך נוכל לעזור לך?" class="smai-input w-full p-3 rounded-xl text-sm h-32 resize-none"></textarea>
+            </div>
+
+            <button id="sendBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition duration-300 shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2">
+                שלח פנייה לצוות SMAI
+                <span class="text-xl">🚀</span>
+            </button>
+        </div>
+
+        <div id="status" class="mt-6 text-center text-sm font-medium"></div>
     </div>
 
-    [Image of a web contact form with name, email, and message fields]
+    [Image of a professional support ticket database structure showing name, email, and IP fields]
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -45,41 +70,40 @@
             const issue = document.getElementById('userIssue').value;
             const statusDiv = document.getElementById('status');
 
-            // בדיקה שכל השדות מלאים, כולל המייל
             if(!name || !email || !issue) {
-                statusDiv.innerText = "❌ חובה למלא שם, אימייל ותיאור בעיה";
-                statusDiv.className = "mt-4 text-center text-red-500";
-                return;
-            }
-
-            // בדיקה בסיסית שהמייל תקין
-            if(!email.includes("@")) {
-                statusDiv.innerText = "❌ כתובת האימייל לא תקינה";
-                statusDiv.className = "mt-4 text-center text-red-500";
+                statusDiv.innerText = "⚠️ נא למלא את כל השדות";
+                statusDiv.className = "mt-6 text-center text-yellow-500";
                 return;
             }
 
             try {
-                statusDiv.innerText = "מעלה נתונים...";
+                statusDiv.innerText = "מתחבר לשרת SMAI...";
+                statusDiv.className = "mt-6 text-center text-blue-400 animate-pulse";
+
+                // קבלת כתובת ה-IP של הגולש
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+
                 await addDoc(collection(db, "tickets"), {
                     customerName: name,
-                    customerEmail: email, // שמירת המייל ב-Database
+                    customerEmail: email,
                     message: issue,
+                    userIP: ipData.ip, // שמירת ה-IP של המשתמש
                     time: serverTimestamp(),
                     status: "new"
                 });
                 
-                statusDiv.innerText = "✅ נשלח בהצלחה! תקבל תשובה למייל.";
-                statusDiv.className = "mt-4 text-center text-green-400";
+                statusDiv.innerText = "✅ הפנייה נשלחה! תקבל תשובה למייל בקרוב.";
+                statusDiv.className = "mt-6 text-center text-green-400 font-bold";
                 
-                // איפוס השדות
+                // איפוס טופס
                 document.getElementById('userName').value = "";
                 document.getElementById('userEmail').value = "";
                 document.getElementById('userIssue').value = "";
             } catch (e) {
                 console.error(e);
-                statusDiv.innerText = "❌ שגיאה בשליחה. נסה שוב מאוחר יותר.";
-                statusDiv.className = "mt-4 text-center text-red-500";
+                statusDiv.innerText = "❌ תקלה בחיבור למסד הנתונים";
+                statusDiv.className = "mt-6 text-center text-red-500";
             }
         };
     </script>
