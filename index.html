@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>SMAI Support System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .smai-card { background: rgba(30, 41, 59, 0.7); border: 1px solid #3b82f6; backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-md mx-auto smai-card p-6 rounded-2xl shadow-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-blue-400 text-center">מרכז התמיכה SMAI</h1>
+        
+        <div id="ticket-form" class="space-y-4">
+            <div>
+                <label class="block text-sm mb-1">שם מלא</label>
+                <input type="text" id="cust-name" class="w-full p-2 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">מה הבעיה?</label>
+                <textarea id="cust-msg" class="w-full p-2 rounded bg-slate-900 border border-slate-700 h-24 outline-none focus:border-blue-500"></textarea>
+            </div>
+            
+            <p class="text-sm font-bold text-slate-400">איך תרצה שנעזור לך?</p>
+            <div class="grid grid-cols-1 gap-2">
+                <button onclick="contact('whatsapp')" class="bg-green-600 hover:bg-green-700 p-2 rounded font-bold transition">WhatsApp 💬</button>
+                <button onclick="contact('mail')" class="bg-red-600 hover:bg-red-700 p-2 rounded font-bold transition">Email ✉️</button>
+                <button id="live-chat-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold transition">צ'אט אנונימי אונליין ⚡</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="mt-12 hidden">
+        <h2 class="text-xl font-bold mb-4 text-yellow-400">ניהול טיקטים - צוות SMAI</h2>
+        <div id="tickets-list" class="space-y-2">
+            </div>
+    </div>
+
+    <script type="module">
+        // כאן יבוא החיבור ל-Firebase שדיברנו עליו קודם
+        
+        window.contact = function(type) {
+            const name = document.getElementById('cust-name').value;
+            const msg = document.getElementById('cust-msg').value;
+            
+            if (type === 'whatsapp') {
+                window.open(`https://wa.me/972XXXXXXXXX?text=שלום, אני ${name}. הבעיה שלי היא: ${msg}`);
+            } else if (type === 'mail') {
+                window.location.href = `mailto:support@smai.com?subject=תמיכה מהאתר - ${name}&body=${msg}`;
+            }
+            
+            // כאן נוסיף קוד ששומר את הפנייה ב-Firestore כדי שתוכל לראות אותה בפאנל
+        }
+    </script>
+</body>
+</html>
