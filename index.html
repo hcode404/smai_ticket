@@ -2,142 +2,71 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>SMAI Support Center - מערכת תמיכה</title>
+    <title>SMAI Support Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0f172a; color: white; font-family: system-ui, -apple-system, sans-serif; }
-        .smai-border { border: 1px solid #3b82f6; background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); }
-        .admin-section { display: none; } /* מוסתר כברירת מחדל */
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .smai-card { background: #1e293b; border: 1px solid #3b82f6; border-radius: 15px; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-5">
 
-    <div id="customer-view" class="max-w-xl mx-auto space-y-8">
-        <header class="text-center">
-            <h1 class="text-4xl font-extrabold text-blue-500 mb-2">SMAI SUPPORT</h1>
-            <p class="text-slate-400">איך נוכל לעזור לך היום?</p>
-        </header>
-
-        <div class="smai-border p-6 rounded-2xl shadow-xl space-y-4">
-            <h2 class="text-xl font-bold mb-4">פתיחת קריאת שירות (Ticket)</h2>
-            <input type="text" id="name" placeholder="השם שלך" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 focus:border-blue-500 outline-none transition">
-            <textarea id="issue" placeholder="פירוט הבעיה..." class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 h-32 focus:border-blue-500 outline-none transition"></textarea>
+    <div id="app" class="max-w-md mx-auto space-y-5">
+        <div class="smai-card p-6 text-center">
+            <h1 class="text-2xl font-bold text-blue-400 mb-4">תמיכת SMAI</h1>
+            <input id="userName" type="text" placeholder="השם שלך" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-700">
+            <textarea id="userIssue" placeholder="איך אפשר לעזור?" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-700 h-24"></textarea>
             
-            <div class="grid grid-cols-1 gap-3 pt-4">
-                <button onclick="handleTicket('whatsapp')" class="bg-green-600 hover:bg-green-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">פנייה בוואטסאפ 💬</button>
-                <button onclick="handleTicket('email')" class="bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">פנייה במייל ✉️</button>
-                <button onclick="handleTicket('chat')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">צאט אנונימי באתר ⚡</button>
+            <div class="grid grid-cols-1 gap-2">
+                <button id="open-chat" class="bg-blue-600 p-2 rounded font-bold">פתיחת צ'אט אנונימי ⚡</button>
             </div>
         </div>
-        
-        <div class="text-center">
-            <button id="admin-login-btn" class="text-xs text-slate-600 hover:text-blue-400">כניסת צוות SMAI</button>
-        </div>
     </div>
-
-    <div id="admin-view" class="admin-section max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-            <h2 class="text-2xl font-bold text-yellow-500">ניהול פניות - SMAI Panel</h2>
-            <button onclick="logout()" class="bg-slate-800 px-4 py-2 rounded-lg text-sm">התנתק</button>
-        </div>
-
-        <div id="tickets-list" class="grid gap-4">
-            <p class="text-slate-500 italic">טוען נתונים מהשרת...</p>
-        </div>
-    </div>
-
-    [Image of customer support ticket management system dashboard]
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-        // הגדרות Firebase שלך
+        // הנתונים שלך מה-Firebase
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDYDkAmoXztR7LdsXdY_GQzgZLnzoDZolg",
+            authDomain: "sspeak-90bf3.firebaseapp.com",
+            projectId: "sspeak-90bf3",
+            storageBucket: "sspeak-90bf3.firebasestorage.app",
+            messagingSenderId: "664670416687",
+            appId: "1:664670416687:web:0e7430338b37d041cc7bda",
+            measurementId: "G-JE78RMNKEX"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
 
-        // פונקציה לשליחת טיקט
-        window.handleTicket = async (method) => {
-            const userName = document.getElementById('name').value;
-            const userIssue = document.getElementById('issue').value;
+        document.getElementById('open-chat').onclick = async () => {
+            const name = document.getElementById('userName').value;
+            const issue = document.getElementById('userIssue').value;
 
-            if(!userName || !userIssue) return alert("בבקשה מלא את כל השדות!");
+            if(!name || !issue) return alert("מלא שם ופירוט בעיה");
 
-            // שמירה ב-Database של הטיקטים
-            await addDoc(collection(db, "smai_tickets"), {
-                name: userName,
-                message: userIssue,
-                method: method,
-                status: "open",
-                time: serverTimestamp()
-            });
-
-            if(method === 'whatsapp') window.open(`https://wa.me/972XXXXXXXXX?text=שלום SMAI, שמי ${userName}. הבעיה שלי: ${userIssue}`);
-            else if(method === 'email') window.location.href = `mailto:support@smai.co.il?subject=Support Request from ${userName}&body=${userIssue}`;
-            else alert("הפנייה נשלחה! מנהל יתחבר לצאט בהקדם.");
-            
-            document.getElementById('name').value = "";
-            document.getElementById('issue').value = "";
-        };
-
-        // לוגיקת ניהול (Admin)
-        document.getElementById('admin-login-btn').onclick = () => signInWithPopup(auth, provider);
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // בדיקה אם המשתמש הוא אדמין ב-Firestore (באוסף שנקרא staff)
-                const adminRef = doc(db, "staff", user.uid);
-                const adminSnap = await getDoc(adminRef);
-
-                if (adminSnap.exists() && adminSnap.data().role === "admin") {
-                    document.getElementById('customer-view').style.display = 'none';
-                    document.getElementById('admin-view').style.display = 'block';
-                    loadAdminData();
-                } else {
-                    alert("גישה נדחתה: אינך מוגדר כאיש צוות ב-SMAI");
-                    signOut(auth);
-                }
-            }
-        });
-
-        function loadAdminData() {
-            const q = query(collection(db, "smai_tickets"), orderBy("time", "desc"));
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('tickets-list');
-                list.innerHTML = "";
-                snapshot.forEach(ticketDoc => {
-                    const t = ticketDoc.data();
-                    list.innerHTML += `
-                        <div class="p-5 bg-slate-800 rounded-xl border-l-4 ${t.status === 'open' ? 'border-yellow-500' : 'border-green-500'}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-lg">${t.name}</h3>
-                                    <p class="text-slate-300 text-sm mt-1">${t.message}</p>
-                                    <span class="text-[10px] text-blue-400 mt-2 block">ערוץ מועדף: ${t.method}</span>
-                                </div>
-                                <button onclick="closeTicket('${ticketDoc.id}')" class="text-[10px] bg-slate-700 px-2 py-1 rounded hover:bg-green-900 transition">סמן כטופל</button>
-                            </div>
-                        </div>
-                    `;
+            try {
+                // התחברות אנונימית
+                await signInAnonymously(auth);
+                
+                // שמירת הטיקט ב-Database
+                await addDoc(collection(db, "tickets"), {
+                    customerName: name,
+                    message: issue,
+                    status: "open",
+                    createdAt: serverTimestamp()
                 });
-            });
-        }
 
-        window.closeTicket = async (id) => {
-            await updateDoc(doc(db, "smai_tickets", id), { status: "closed" });
+                alert("הפנייה נשלחה! נציג SMAI יחזור אליך בקרוב.");
+            } catch (error) {
+                console.error(error);
+                alert("שגיאה: וודא שפתחת את ה-Firestore ב-Test Mode ב-Firebase Console.");
+            }
         };
-
-        window.logout = () => signOut(auth).then(() => location.reload());
     </script>
 </body>
 </html>
