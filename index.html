@@ -8,16 +8,20 @@
 <body class="bg-slate-900 text-white p-10">
     <div class="max-w-md mx-auto bg-slate-800 p-8 rounded-2xl border border-blue-500 shadow-2xl">
         <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">SMAI SUPPORT</h1>
-        <input id="userName" type="text" placeholder="השם שלך" class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500">
-        <textarea id="userIssue" placeholder="איך נוכל לעזור?" class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 h-32 outline-none focus:border-blue-500"></textarea>
-        <button id="sendBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition">שלח פנייה למערכת ⚡</button>
-        <div id="status" class="mt-4 text-center text-sm"></div>
+        <p class="text-xs text-slate-400 mb-4 text-center">המערכת מחוברת ל-Firebase Database</p>
+        
+        <input id="userName" type="text" placeholder="השם שלך" class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 outline-none focus:border-blue-500 text-white">
+        <textarea id="userIssue" placeholder="תאר את הבעיה..." class="w-full p-3 mb-4 rounded bg-slate-900 border border-slate-700 h-32 outline-none focus:border-blue-500 text-white"></textarea>
+        
+        <button id="sendBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition">שלח פנייה לצוות SMAI ⚡</button>
+        <div id="status" class="mt-4 text-center text-sm font-bold"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+        // ה-Config המדויק שלך מה-Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDYDkAmoXztR7LdsXdY_GQzgZLnzoDZolg",
             authDomain: "sspeak-90bf3.firebaseapp.com",
@@ -37,23 +41,29 @@
             const statusDiv = document.getElementById('status');
 
             if(!name || !issue) {
-                statusDiv.innerText = "❌ נא למלא את כל השדות";
+                statusDiv.innerText = "❌ נא למלא שם ופירוט";
+                statusDiv.className = "mt-4 text-center text-red-500";
                 return;
             }
 
             try {
-                statusDiv.innerText = "שולח...";
+                statusDiv.innerText = "שולח נתונים לשרת...";
+                // שמירה בטבלה שנקראת tickets
                 await addDoc(collection(db, "tickets"), {
                     customerName: name,
                     message: issue,
-                    time: serverTimestamp()
+                    time: serverTimestamp(),
+                    status: "new"
                 });
-                statusDiv.innerText = "✅ הפנייה נשמרה ב-SMAI Database!";
+                
+                statusDiv.innerText = "✅ נשלח בהצלחה! הנתונים נשמרו ב-Database.";
+                statusDiv.className = "mt-4 text-center text-green-400";
                 document.getElementById('userName').value = "";
                 document.getElementById('userIssue').value = "";
             } catch (e) {
                 console.error(e);
-                statusDiv.innerText = "❌ שגיאה: וודא שהגדרת Test Mode ב-Firestore Rules";
+                statusDiv.innerText = "❌ שגיאה בחיבור! בדוק את ה-Rules ב-Firebase";
+                statusDiv.className = "mt-4 text-center text-red-500";
             }
         };
     </script>
